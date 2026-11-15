@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { historyLimit, questionLimit, type ChatMessage } from "../lib/schemas";
 
 const providerError = "El proveedor no completó la respuesta. Comprueba el servicio y el modelo configurados.";
@@ -72,6 +73,7 @@ export default function Chat() {
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 px-5 py-10">
       <header className="border-b border-stone-300 pb-5">
         <h1 className="text-3xl font-semibold tracking-tight">RAG Chat</h1>
+        <Link href="/documents" className="text-teal-800 underline">Gestionar documentos</Link>
         <p className="mt-2 text-sm text-stone-600">Chat general · Documentos aún sin conectar</p>
       </header>
       <section aria-label="Conversación" className="flex flex-1 flex-col gap-4">

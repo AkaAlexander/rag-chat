@@ -9,3 +9,4 @@ coverage/
 *.sqlite*
 *.tsbuildinfo
 next-env.d.ts
+data/model-cache/

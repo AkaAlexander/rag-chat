@@ -16,6 +16,10 @@ Abre http://localhost:3000. Para conversar con el proveedor inicial, instala y a
 
 El navegador conserva la conversación mientras la página está abierta y envía hasta diez turnos anteriores. Cada pregunta admite 4000 caracteres. La ruta usa un límite en memoria de diez solicitudes por minuto. En desarrollo local se comparte un único cupo. Detrás de un proxy que sobrescribe `X-Real-IP` y es la única entrada al servidor, configura `TRUST_PROXY=true` para aplicar el límite por IP.
 
+## Documentos
+
+En `/documents` puedes indexar archivos Markdown y texto UTF-8 de hasta 256 KiB. El servidor divide el texto en ventanas de 80 unidades con 16 de solapamiento (las palabras largas se subdividen) y calcula vectores multilingües de 384 dimensiones en CPU. La primera ingesta descarga el modelo y lo guarda en `data/model-cache/`. SQLite conserva el texto original, los fragmentos y sus vectores en `data/rag.sqlite`. Borrar un documento elimina también sus fragmentos. La recuperación para el chat corresponde a la fase 4.
+
 ## Comprobaciones
 
 ```powershell
