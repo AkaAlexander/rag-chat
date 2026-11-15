@@ -22,6 +22,8 @@ En `/documents` puedes indexar archivos Markdown y texto UTF-8 de hasta 256 KiB.
 
 ## Comprobaciones
 
+El proveedor produce un objeto con respuesta, identificadores de citas y confianza estimada (baja, media o alta). Zod valida su estructura y el servidor resuelve los identificadores contra los fragmentos recuperados. Si la primera búsqueda resulta insuficiente, el modelo puede llamar una vez a `search_documents` con una consulta reformulada. Si aparecen fragmentos nuevos, el servidor los incorpora al contexto y solicita una última respuesta. La interfaz muestra la búsqueda en curso y publica el resultado después de validarlo.
+
 ```powershell
 npm run lint
 npm run typecheck

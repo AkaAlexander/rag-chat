@@ -1,6 +1,6 @@
 import { getProvider } from "../llm";
 import type { ChatMessage } from "../schemas";
-import { citedSources, contextMessage, finalAnswer, refusal, systemPrompt } from "./prompts";
+import { contextMessage, refusal, searchPrompt, systemPrompt } from "./prompts";
 import { retrieve } from "./retrieve";
 
 export async function* answerQuestion(messages: ChatMessage[], signal: AbortSignal) {
@@ -14,18 +14,32 @@ export async function* answerQuestion(messages: ChatMessage[], signal: AbortSign
     yield { error: "Todavía no hay documentos indexados. Abre «Gestionar documentos», elige un archivo y pulsa «Indexar documento»." };
     return;
   }
-  if (sources.length) {
-    let answer = "";
-    for await (const text of getProvider().stream([contextMessage(messages, sources)], signal, systemPrompt)) {
-      answer += text;
+  const provider = getProvider();
+  const maxAdditionalSearches = 1;
+  for (let attempt = 0; attempt <= maxAdditionalSearches; attempt++) {
+    signal.throwIfAborted();
+    const context = contextMessage(messages, sources);
+    if (sources.length) {
+      const result = await provider.structured(context, systemPrompt, signal);
+      const ids = [...new Set(result.citations)];
+      const inline = [...result.answer.matchAll(/\[(\d+)\]/g)].map(match => Number(match[1]));
+      if (result.answer.trim() && ids.length && ids.every(id => id >= 1 && id <= sources.length)
+        && inline.every(id => ids.includes(id))) {
+        yield { text: result.answer.trim() };
+        yield { citations: ids.map(id => ({ id, ...sources[id - 1] })), confidence: result.confidence };
+        return;
+      }
     }
-    answer = finalAnswer(answer);
-    const citations = citedSources(answer, sources);
-    if (citations.length) {
-      yield { text: answer.trim() };
-      yield { citations };
-      return;
-    }
+    if (attempt === maxAdditionalSearches) break;
+    const query = await provider.requestSearch(context, searchPrompt, signal);
+    if (!query) break;
+    yield { status: "Buscando más información en tus documentos…" };
+    const matches = await retrieve(query);
+    const added = (matches ?? []).filter(match => !sources.some(source =>
+      source.name === match.name && source.position === match.position && source.content === match.content));
+    if (!added.length) break;
+    sources.push(...added);
   }
   yield { text: refusal(question) };
+  yield { citations: [], confidence: "low" };
 }

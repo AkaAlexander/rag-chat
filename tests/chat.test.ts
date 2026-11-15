@@ -29,36 +29,32 @@ it("limits requests per address until the window expires", () => {
   expect(allowRequest("first", 61000)).toBe(true);
 });
 
-it.each(["ollama", "openai", "anthropic"])("streams %s through the route", async provider => {
+it.each(["ollama", "openai", "anthropic"])("validates the structured %s response through the route", async provider => {
   vi.stubEnv("LLM_PROVIDER", provider);
   vi.stubEnv("ANTHROPIC_API_KEY", "test-only");
   vi.stubEnv("OPENAI_API_KEY", "test-only");
-  const pieces = ["Sí", ", claro. [1]"];
-  const sse = (data: unknown) => "data: " + JSON.stringify(data) + "\n\n";
+  const content = JSON.stringify({ answer: "Sí, claro.", citations: [1], confidence: "high" });
   const wire = {
-    ollama: pieces.map((content, i) => JSON.stringify({ done: i === 1, message: { content } })).join("\n"),
-    openai: pieces.map(content => sse({ choices: [{ delta: { content } }] })).join("") + "data: [DONE]\n\n",
-    anthropic: pieces.map(text => "event: content_block_delta\n" +
-      sse({ type: "content_block_delta", delta: { type: "text_delta", text } })).join(""),
+    ollama: { message: { content } },
+    openai: { choices: [{ message: { content } }] },
+    anthropic: { content: [{ type: "text", text: content }] },
   };
-  const key = provider as keyof typeof wire;
-  vi.stubGlobal("fetch", vi.fn(async () => new Response(wire[key], {
-    headers: { "content-type": provider === "ollama" ? "application/x-ndjson" : "text/event-stream" },
-  })));
+  vi.stubGlobal("fetch", vi.fn(async () => Response.json(wire[provider as keyof typeof wire])));
   const response = await POST(request());
   expect(response.status).toBe(200);
   expect((await response.text()).trim().split("\n").map(line => JSON.parse(line)))
-    .toEqual([{ text: "Sí, claro. [1]" }, { citations: [
+    .toEqual([{ text: "Sí, claro." }, { citations: [
       { id: 1, name: "guia.md", position: 0, content: "Sí, claro." },
-    ] }, { done: true }]);
+    ], confidence: "high" }, { done: true }]);
 });
 
-it("declines without contacting the provider when retrieval finds no evidence", async () => {
+it("declines when retrieval finds no evidence and no search is requested", async () => {
   vi.mocked(retrieve).mockResolvedValueOnce([]);
-  const fetch = vi.fn();
+  vi.stubEnv("LLM_PROVIDER", "ollama");
+  const fetch = vi.fn(async () => Response.json({ message: { content: "" } }));
   vi.stubGlobal("fetch", fetch);
   expect(await (await POST(request("¿Qué precio tiene?"))).text()).toContain("No encuentro");
-  expect(fetch).not.toHaveBeenCalled();
+  expect(fetch).toHaveBeenCalledTimes(1);
 });
 
 it("explains how to index the first document when the library is empty", async () => {

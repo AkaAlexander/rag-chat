@@ -7,7 +7,9 @@ import { historyLimit, questionLimit, type ChatMessage } from "../lib/schemas";
 const providerError = "El proveedor no completó la respuesta. Comprueba el servicio y el modelo configurados.";
 
 interface Citation { id: number; name: string; position: number; content: string }
-type VisibleMessage = ChatMessage & { citations?: Citation[] };
+const confidenceLabels = { low: "baja", medium: "media", high: "alta" };
+type Confidence = keyof typeof confidenceLabels;
+type VisibleMessage = ChatMessage & { citations?: Citation[]; confidence?: Confidence };
 
 async function readAnswer(response: Response, update: (text: string) => void) {
   if (!response.ok) throw new Error((await response.json()).error);
@@ -16,6 +18,7 @@ async function readAnswer(response: Response, update: (text: string) => void) {
   let buffer = "";
   let answer = "";
   let citations: Citation[] = [];
+  let confidence: Confidence | undefined;
   try {
     while (true) {
       const chunk = await reader.read();
@@ -26,9 +29,14 @@ async function readAnswer(response: Response, update: (text: string) => void) {
       for (const line of lines) {
         const event = JSON.parse(line);
         if (event.error) throw new Error(typeof event.error === "string" ? event.error : providerError);
-        if (event.done && answer.trim()) return { content: answer, citations };
+        if (event.status) {
+          update(event.status);
+          continue;
+        }
+        if (event.done && answer.trim()) return { content: answer, citations, confidence };
         if (Array.isArray(event.citations)) {
           citations = event.citations;
+          confidence = event.confidence;
           continue;
         }
         if (typeof event.text !== "string") throw new Error(providerError);
@@ -91,6 +99,9 @@ export default function Chat() {
             : "rounded-xl border border-stone-200 bg-white px-4 py-3"}>
             <h2 className="mb-1 text-xs font-semibold">{message.role === "user" ? "Tú" : "Asistente"}</h2>
             <p className="whitespace-pre-wrap wrap-anywhere">{message.content}</p>
+            {message.confidence && <p className="mt-2 text-xs text-stone-600">
+              Confianza estimada · {confidenceLabels[message.confidence]}
+            </p>}
             {message.citations?.map(source => (
               <details key={source.id} className="mt-3 border-t border-stone-200 pt-2 text-sm">
                 <summary className="cursor-pointer font-medium">[{source.id}] {source.name} · Fragmento {source.position + 1}</summary>

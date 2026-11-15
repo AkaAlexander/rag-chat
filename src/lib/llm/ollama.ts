@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { answerFormat, answerSchema, searchQuery, searchTool } from "./contracts";
+import type { ChatMessage } from "../schemas";
+import { finalAnswer } from "../rag/prompts";
 import type { LLMProvider } from "./provider";
 
 const chunkSchema = z.object({
@@ -7,9 +10,32 @@ const chunkSchema = z.object({
 });
 
 export function ollamaProvider(model: string, baseUrl: string): LLMProvider {
+  const url = new URL("api/chat", baseUrl.replace(/\/?$/, "/"));
+  async function complete(message: ChatMessage, system: string, signal: AbortSignal, options: object) {
+    const response = await fetch(url, {
+      method: "POST", signal, headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model, stream: false,
+        ...(model.split(":")[0] === "qwen3" ? { think: false } : {}),
+        options: { temperature: 0, num_predict: 3072 }, ...options,
+        messages: [{ role: "system", content: system }, message] }),
+    });
+    if (!response.ok) throw new Error("Ollama unavailable");
+    return (await response.json()).message;
+  }
   return {
+    async structured(message, system, signal) {
+      const reply = await complete(message, system, signal, {
+        format: answerFormat, ...(model.split(":")[0] === "qwen3" ? { think: true } : {}),
+      });
+      return answerSchema.parse(JSON.parse(finalAnswer(reply.content)));
+    },
+    async requestSearch(message, system, signal) {
+      const reply = await complete(message, system, signal, { tools: [{ type: "function", function: searchTool }] });
+      const call = reply.tool_calls?.[0]?.function;
+      return call ? searchQuery(call.name, call.arguments) : null;
+    },
     async *stream(messages, signal, systemPrompt) {
-      const response = await fetch(new URL("api/chat", baseUrl.replace(/\/?$/, "/")), {
+      const response = await fetch(url, {
         method: "POST", signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
