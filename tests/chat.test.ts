@@ -51,3 +51,13 @@ it("signals interrupted responses without exposing upstream details", async () =
   vi.stubGlobal("fetch", vi.fn(async () => new Response('{"error":"private detail"}')));
   expect(await (await POST(request())).text()).toBe('{"error":true}\n');
 });
+
+it("reports exhausted API credit separately from temporary throttling", async () => {
+  vi.stubEnv("LLM_PROVIDER", "openai");
+  vi.stubEnv("OPENAI_API_KEY", "test-only");
+  vi.stubGlobal("fetch", vi.fn(async () => Response.json({
+    error: { code: "credit_balance_exhausted", type: "insufficient_quota", message: "private detail" },
+  }, { status: 429 })));
+  const event = JSON.parse(await (await POST(request())).text());
+  expect(event.error).toBe("Se ha agotado el saldo de la API. Revisa la facturación de tu cuenta.");
+});

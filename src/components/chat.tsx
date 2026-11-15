@@ -20,7 +20,7 @@ async function readAnswer(response: Response, update: (text: string) => void) {
       buffer = lines.pop()!;
       for (const line of lines) {
         const event = JSON.parse(line);
-        if (event.error) throw new Error(providerError);
+        if (event.error) throw new Error(typeof event.error === "string" ? event.error : providerError);
         if (event.done && answer.trim()) return answer;
         if (typeof event.text !== "string") throw new Error(providerError);
         answer += event.text;

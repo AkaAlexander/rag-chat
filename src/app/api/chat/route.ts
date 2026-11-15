@@ -26,8 +26,11 @@ export async function POST(request: Request) {
         const event = next.done ? { done: true } : { text: next.value };
         controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
         if (next.done) controller.close();
-      } catch {
-        controller.enqueue(encoder.encode('{"error":true}\n'));
+      } catch (cause) {
+        const error = cause instanceof Error && "status" in cause && cause.status === 429
+          ? rateLimitMessage(cause)
+          : true;
+        controller.enqueue(encoder.encode(JSON.stringify({ error }) + "\n"));
         controller.close();
       }
     },
@@ -40,4 +43,14 @@ export async function POST(request: Request) {
     "Content-Type": "application/x-ndjson; charset=utf-8",
     "Cache-Control": "no-store", "X-Accel-Buffering": "no",
   } });
+}
+
+function rateLimitMessage(cause: Error) {
+  if ("code" in cause && cause.code === "credit_balance_exhausted") {
+    return "Se ha agotado el saldo de la API. Revisa la facturación de tu cuenta.";
+  }
+  if ("type" in cause && cause.type === "insufficient_quota") {
+    return "La cuota de la API es insuficiente. Revisa el saldo y los límites de uso.";
+  }
+  return "El proveedor ha limitado las peticiones. Espera un momento y vuelve a intentarlo.";
 }
