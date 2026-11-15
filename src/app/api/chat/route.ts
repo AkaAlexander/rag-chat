@@ -1,4 +1,4 @@
-import { getProvider } from "../../../lib/llm";
+import { answerQuestion } from "../../../lib/rag/answer";
 import { readConfig } from "../../../lib/config";
 import { allowRequest } from "../../../lib/rate-limit";
 import { chatSchema } from "../../../lib/schemas";
@@ -18,12 +18,12 @@ export async function POST(request: Request) {
   const abort = new AbortController();
   const signal = AbortSignal.any([request.signal, abort.signal, AbortSignal.timeout(180_000)]);
   const encoder = new TextEncoder();
-  const events = getProvider().stream(input.data.messages, signal)[Symbol.asyncIterator]();
+  const events = answerQuestion(input.data.messages, signal);
   const body = new ReadableStream({
     async pull(controller) {
       try {
         const next = await events.next();
-        const event = next.done ? { done: true } : { text: next.value };
+        const event = next.done ? { done: true } : next.value;
         controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
         if (next.done) controller.close();
       } catch (cause) {
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     },
     async cancel() {
       abort.abort();
-      await events.return?.();
+      await events.return(undefined);
     },
   });
   return new Response(body, { headers: {

@@ -6,12 +6,16 @@ import { historyLimit, questionLimit, type ChatMessage } from "../lib/schemas";
 
 const providerError = "El proveedor no completó la respuesta. Comprueba el servicio y el modelo configurados.";
 
+interface Citation { id: number; name: string; position: number; content: string }
+type VisibleMessage = ChatMessage & { citations?: Citation[] };
+
 async function readAnswer(response: Response, update: (text: string) => void) {
   if (!response.ok) throw new Error((await response.json()).error);
   if (!response.body) throw new Error(providerError);
   const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
   let buffer = "";
   let answer = "";
+  let citations: Citation[] = [];
   try {
     while (true) {
       const chunk = await reader.read();
@@ -22,7 +26,11 @@ async function readAnswer(response: Response, update: (text: string) => void) {
       for (const line of lines) {
         const event = JSON.parse(line);
         if (event.error) throw new Error(typeof event.error === "string" ? event.error : providerError);
-        if (event.done && answer.trim()) return answer;
+        if (event.done && answer.trim()) return { content: answer, citations };
+        if (Array.isArray(event.citations)) {
+          citations = event.citations;
+          continue;
+        }
         if (typeof event.text !== "string") throw new Error(providerError);
         answer += event.text;
         update(answer);
@@ -34,7 +42,7 @@ async function readAnswer(response: Response, update: (text: string) => void) {
 }
 
 export default function Chat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<VisibleMessage[]>([]);
   const [question, setQuestion] = useState("");
   const [pending, setPending] = useState("");
   const [partial, setPartial] = useState("");
@@ -53,10 +61,10 @@ export default function Chat() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history.slice(-historyLimit) }),
+        body: JSON.stringify({ messages: history.slice(-historyLimit).map(({ role, content }) => ({ role, content })) }),
       });
-      const content = await readAnswer(response, setPartial);
-      setMessages([...history, { role: "assistant", content }]);
+      const answer = await readAnswer(response, setPartial);
+      setMessages([...history, { role: "assistant", ...answer }]);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : providerError);
       setQuestion(message.content);
@@ -66,7 +74,7 @@ export default function Chat() {
     }
   }
 
-  const visible = pending ? [...messages, { role: "user", content: pending },
+  const visible: VisibleMessage[] = pending ? [...messages, { role: "user", content: pending },
     { role: "assistant", content: partial || "Generando respuesta…" }] : messages;
 
   return (
@@ -74,7 +82,7 @@ export default function Chat() {
       <header className="border-b border-stone-300 pb-5">
         <h1 className="text-3xl font-semibold tracking-tight">RAG Chat</h1>
         <Link href="/documents" className="text-teal-800 underline">Gestionar documentos</Link>
-        <p className="mt-2 text-sm text-stone-600">Chat general · Documentos aún sin conectar</p>
+        <p className="mt-2 text-sm text-stone-600">Pregunta sobre tus documentos indexados.</p>
       </header>
       <section aria-label="Conversación" className="flex flex-1 flex-col gap-4">
         {visible.map((message, index) => (
@@ -83,6 +91,12 @@ export default function Chat() {
             : "rounded-xl border border-stone-200 bg-white px-4 py-3"}>
             <h2 className="mb-1 text-xs font-semibold">{message.role === "user" ? "Tú" : "Asistente"}</h2>
             <p className="whitespace-pre-wrap wrap-anywhere">{message.content}</p>
+            {message.citations?.map(source => (
+              <details key={source.id} className="mt-3 border-t border-stone-200 pt-2 text-sm">
+                <summary className="cursor-pointer font-medium">[{source.id}] {source.name} · Fragmento {source.position + 1}</summary>
+                <blockquote className="mt-2 whitespace-pre-wrap wrap-anywhere text-stone-700">{source.content}</blockquote>
+              </details>
+            ))}
           </article>
         ))}
       </section>

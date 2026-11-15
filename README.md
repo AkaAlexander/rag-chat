@@ -1,6 +1,6 @@
 # RAG Chat
 
-Proyecto de portfolio para consultar documentos propios y citar los fragmentos que respaldan cada respuesta. La fase 2 permite conversar en streaming con el proveedor configurado. La recuperación de documentos y las citas se incorporarán en fases posteriores.
+Chat sobre documentos propios. Indexa un archivo en `/documents`, vuelve al chat y pregunta por un dato del texto. Despliega la referencia numerada de la respuesta para leer el fragmento original.
 
 ## Arranque local
 
@@ -8,7 +8,7 @@ Desde la carpeta del proyecto, con Node.js 24 y npm, ejecuta en PowerShell:
 
 ```powershell
 npm ci
-Copy-Item .env.example .env.local
+if (-not (Test-Path .env.local)) { Copy-Item .env.example .env.local }
 npm run dev
 ```
 
@@ -18,7 +18,7 @@ El navegador conserva la conversación mientras la página está abierta y enví
 
 ## Documentos
 
-En `/documents` puedes indexar archivos Markdown y texto UTF-8 de hasta 256 KiB. El servidor divide el texto en ventanas de 80 unidades con 16 de solapamiento (las palabras largas se subdividen) y calcula vectores multilingües de 384 dimensiones en CPU. La primera ingesta descarga el modelo y lo guarda en `data/model-cache/`. SQLite conserva el texto original, los fragmentos y sus vectores en `data/rag.sqlite`. Borrar un documento elimina también sus fragmentos. La recuperación para el chat corresponde a la fase 4.
+En `/documents` puedes indexar archivos Markdown y texto UTF-8 de hasta 256 KiB. El servidor divide el texto en ventanas de 80 unidades con 16 de solapamiento (las palabras largas se subdividen) y calcula vectores multilingües de 384 dimensiones en CPU. La primera ingesta descarga el modelo y lo guarda en `data/model-cache/`. SQLite conserva el texto original, los fragmentos y sus vectores en `data/rag.sqlite`. Borrar un documento elimina también sus fragmentos. Para cada pregunta se calcula la similitud coseno con los vectores guardados. Los cuatro mejores fragmentos que alcanzan 0,35 pueden llegar al modelo. Este umbral inicial se evaluará en la fase 6. El servidor comprueba las referencias antes de mostrar la respuesta y obtiene las citas del texto guardado. Si falta evidencia o las referencias son inválidas, el chat indica que no encuentra la respuesta.
 
 ## Comprobaciones
 

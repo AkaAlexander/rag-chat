@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { systemPrompt, type LLMProvider } from "./provider";
+import type { LLMProvider } from "./provider";
 
 const chunkSchema = z.object({
   done: z.boolean(),
@@ -8,7 +8,7 @@ const chunkSchema = z.object({
 
 export function ollamaProvider(model: string, baseUrl: string): LLMProvider {
   return {
-    async *stream(messages, signal) {
+    async *stream(messages, signal, systemPrompt) {
       const response = await fetch(new URL("api/chat", baseUrl.replace(/\/?$/, "/")), {
         method: "POST", signal,
         headers: { "Content-Type": "application/json" },

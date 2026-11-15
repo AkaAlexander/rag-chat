@@ -1,6 +1,11 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { POST } from "../src/app/api/chat/route";
 import { allowRequest } from "../src/lib/rate-limit";
+import { retrieve } from "../src/lib/rag/retrieve";
+
+vi.mock("../src/lib/rag/retrieve", () => ({
+  retrieve: vi.fn(async () => [{ name: "guia.md", content: "Sí, claro.", position: 0 }]),
+}));
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -28,7 +33,7 @@ it.each(["ollama", "openai", "anthropic"])("streams %s through the route", async
   vi.stubEnv("LLM_PROVIDER", provider);
   vi.stubEnv("ANTHROPIC_API_KEY", "test-only");
   vi.stubEnv("OPENAI_API_KEY", "test-only");
-  const pieces = ["Sí", ", claro."];
+  const pieces = ["Sí", ", claro. [1]"];
   const sse = (data: unknown) => "data: " + JSON.stringify(data) + "\n\n";
   const wire = {
     ollama: pieces.map((content, i) => JSON.stringify({ done: i === 1, message: { content } })).join("\n"),
@@ -43,7 +48,17 @@ it.each(["ollama", "openai", "anthropic"])("streams %s through the route", async
   const response = await POST(request());
   expect(response.status).toBe(200);
   expect((await response.text()).trim().split("\n").map(line => JSON.parse(line)))
-    .toEqual([{ text: "Sí" }, { text: ", claro." }, { done: true }]);
+    .toEqual([{ text: "Sí, claro. [1]" }, { citations: [
+      { id: 1, name: "guia.md", position: 0, content: "Sí, claro." },
+    ] }, { done: true }]);
+});
+
+it("declines without contacting the provider when retrieval finds no evidence", async () => {
+  vi.mocked(retrieve).mockResolvedValueOnce([]);
+  const fetch = vi.fn();
+  vi.stubGlobal("fetch", fetch);
+  expect(await (await POST(request("¿Qué precio tiene?"))).text()).toContain("No encuentro");
+  expect(fetch).not.toHaveBeenCalled();
 });
 
 it("signals interrupted responses without exposing upstream details", async () => {

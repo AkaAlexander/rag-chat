@@ -1,10 +1,10 @@
 import OpenAI from "openai";
-import { systemPrompt, type LLMProvider } from "./provider";
+import type { LLMProvider } from "./provider";
 
 export function openaiProvider(model: string, apiKey: string): LLMProvider {
   const client = new OpenAI({ apiKey, maxRetries: 0 });
   return {
-    async *stream(messages, signal) {
+    async *stream(messages, signal, systemPrompt) {
       const events = await client.chat.completions.create({
         model, stream: true, max_completion_tokens: 2048,
         messages: [{ role: "system", content: systemPrompt }, ...messages],
