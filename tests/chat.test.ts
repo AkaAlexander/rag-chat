@@ -61,6 +61,12 @@ it("declines without contacting the provider when retrieval finds no evidence", 
   expect(fetch).not.toHaveBeenCalled();
 });
 
+it("explains how to index the first document when the library is empty", async () => {
+  vi.mocked(retrieve).mockResolvedValueOnce(null);
+  const response = await POST(request());
+  expect(await response.text()).toContain("Todavía no hay documentos indexados");
+});
+
 it("signals interrupted responses without exposing upstream details", async () => {
   vi.stubEnv("LLM_PROVIDER", "ollama");
   vi.stubGlobal("fetch", vi.fn(async () => new Response('{"error":"private detail"}')));

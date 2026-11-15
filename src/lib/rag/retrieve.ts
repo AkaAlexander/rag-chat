@@ -33,7 +33,7 @@ export async function retrieve(question: string) {
     SELECT d.name, c.position, c.content, c.embedding FROM chunks c
     JOIN documents d ON d.id = c.document_id ORDER BY d.id, c.position
   `).all() as StoredChunk[];
-  if (!rows.length) return [];
+  if (!rows.length) return null;
   const [vector] = await embedTexts([question]);
   return rankChunks(vector, rows);
 }

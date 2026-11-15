@@ -10,6 +10,10 @@ export async function* answerQuestion(messages: ChatMessage[], signal: AbortSign
     ? question + "\n" + previous
     : question;
   const sources = await retrieve(query);
+  if (sources === null) {
+    yield { error: "Todavía no hay documentos indexados. Abre «Gestionar documentos», elige un archivo y pulsa «Indexar documento»." };
+    return;
+  }
   if (sources.length) {
     let answer = "";
     for await (const text of getProvider().stream([contextMessage(messages, sources)], signal, systemPrompt)) {
