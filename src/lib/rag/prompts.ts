@@ -28,3 +28,10 @@ export function citedSources(answer: string, sources: Source[]) {
   if (answer.includes("NO_EVIDENCE") || !ids.length || ids.some(id => id < 1 || id > sources.length)) return [];
   return [...new Set(ids)].map(id => ({ id, ...sources[id - 1] }));
 }
+
+export function finalAnswer(output: string) {
+  const end = output.lastIndexOf("</think>");
+  if (end >= 0) return output.slice(end + "</think>".length).trim();
+  if (output.trimStart().startsWith("<think>")) return "";
+  return output.trim();
+}

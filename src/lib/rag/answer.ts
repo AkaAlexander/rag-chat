@@ -1,6 +1,6 @@
 import { getProvider } from "../llm";
 import type { ChatMessage } from "../schemas";
-import { citedSources, contextMessage, refusal, systemPrompt } from "./prompts";
+import { citedSources, contextMessage, finalAnswer, refusal, systemPrompt } from "./prompts";
 import { retrieve } from "./retrieve";
 
 export async function* answerQuestion(messages: ChatMessage[], signal: AbortSignal) {
@@ -15,6 +15,7 @@ export async function* answerQuestion(messages: ChatMessage[], signal: AbortSign
     for await (const text of getProvider().stream([contextMessage(messages, sources)], signal, systemPrompt)) {
       answer += text;
     }
+    answer = finalAnswer(answer);
     const citations = citedSources(answer, sources);
     if (citations.length) {
       yield { text: answer.trim() };

@@ -13,7 +13,9 @@ export function ollamaProvider(model: string, baseUrl: string): LLMProvider {
         method: "POST", signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model, stream: true, options: { num_predict: 2048 },
+          model, stream: true,
+          ...(model.split(":")[0] === "qwen3" ? { think: false } : {}),
+          options: { num_predict: 2048, temperature: 0 },
           messages: [{ role: "system", content: systemPrompt }, ...messages],
         }),
       });
