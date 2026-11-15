@@ -1,6 +1,6 @@
 # RAG Chat
 
-Proyecto de portfolio para consultar documentos propios y citar los fragmentos que respaldan cada respuesta. La fase 1 incluye la portada y la configuración del servidor. El chat y la carga de documentos se incorporarán en fases posteriores.
+Proyecto de portfolio para consultar documentos propios y citar los fragmentos que respaldan cada respuesta. La fase 2 permite conversar en streaming con el proveedor configurado. La recuperación de documentos y las citas se incorporarán en fases posteriores.
 
 ## Arranque local
 
@@ -12,7 +12,9 @@ Copy-Item .env.example .env.local
 npm run dev
 ```
 
-Abre http://localhost:3000. El proveedor inicial es Ollama. La portada funciona sin instalar modelos ni configurar claves. Para seleccionar un proveedor remoto, cambia `LLM_PROVIDER` a `anthropic` u `openai` y configura su clave en `.env.local`. Next.js valida la configuración al arrancar. Reinicia el servidor después de cambiar estas variables.
+Abre http://localhost:3000. Para conversar con el proveedor inicial, instala y arranca Ollama y descarga el modelo con `ollama pull qwen3:4b`. Si ya tienes otro modelo de chat, indica su nombre en `OLLAMA_MODEL`. Para usar un proveedor remoto, cambia `LLM_PROVIDER` a `anthropic` u `openai` y configura su clave y un modelo disponible en tu cuenta en `.env.local`. Reinicia el servidor después de cambiar estas variables.
+
+El navegador conserva la conversación mientras la página está abierta y envía hasta diez turnos anteriores. Cada pregunta admite 4000 caracteres. La ruta usa un límite en memoria de diez solicitudes por minuto. En desarrollo local se comparte un único cupo. Detrás de un proxy que sobrescribe `X-Real-IP` y es la única entrada al servidor, configura `TRUST_PROXY=true` para aplicar el límite por IP.
 
 ## Comprobaciones
 

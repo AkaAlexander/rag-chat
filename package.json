@@ -11,7 +11,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "next": "^16",
+    "openai": "^7.57.0",
     "react": "^19",
     "react-dom": "^19",
     "zod": "^4"

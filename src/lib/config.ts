@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const model = z.string().trim().min(1);
 const configSchema = z.object({
+  TRUST_PROXY: z.enum(["true", "false"]).default("false"),
   LLM_PROVIDER: z.enum(["ollama", "anthropic", "openai"]).default("ollama"),
   OLLAMA_BASE_URL: z.url({ protocol: /^https?$/ }).default("http://localhost:11434"),
   OLLAMA_MODEL: model.default("qwen3:4b"),
