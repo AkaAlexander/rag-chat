@@ -31,3 +31,11 @@ it("keeps injected delimiters inside the source and resolves only valid citation
     expect(citedSources(answer, [source])).toEqual([]);
   }
 });
+
+it("retrieves a specific leave reason even when generic vacation chunks score higher", () => {
+  const generic = { ...source, content: "Días de vacaciones", embedding: "[0.7,0.7]" };
+  const specific = { ...source, content: "Mudanza de domicilio | 1 día laborable", embedding: "[0.55,0.84]" };
+  const rows = [generic, generic, generic, generic, specific];
+  expect(rankChunks([1, 0], rows, 0.35, 4, "Cuantos dias de vacaciones tengo por mudanza de domicilio?")
+    .map(chunk => chunk.content)).toContain(specific.content);
+});

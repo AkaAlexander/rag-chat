@@ -20,9 +20,27 @@ export function cosineSimilarity(a: number[], b: number[]) {
   return normA && normB ? dot / Math.sqrt(normA * normB) : 0;
 }
 
-export function rankChunks(query: number[], rows: StoredChunk[], threshold = 0.35, limit = 4): Source[] {
-  return rows.map(row => ({ row, score: cosineSimilarity(query, JSON.parse(row.embedding)) }))
+function words(text: string) {
+  return text.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").match(/[\p{L}\p{N}]+/gu) ?? [];
+}
+
+export function rankChunks(query: number[], rows: StoredChunk[], threshold = 0.35, limit = 4, question = ""): Source[] {
+  const terms = [...new Set(words(question).filter(term => term.length >= 3))];
+  const candidates = rows.map(row => ({
+    row, score: cosineSimilarity(query, JSON.parse(row.embedding)), tokens: new Set(words(row.content)),
+  }));
+  // Rare terms distinguish a specific event from the broader topic of a question.
+  const weights = terms.map(term => {
+    const frequency = candidates.filter(candidate => candidate.tokens.has(term)).length;
+    return frequency ? Math.log(1 + rows.length / frequency) : 0;
+  });
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  return candidates
     .filter(({ score }) => score >= threshold)
+    .map(({ row, score, tokens }) => {
+      const matched = terms.reduce((sum, term, i) => sum + (tokens.has(term) ? weights[i] : 0), 0);
+      return { row, score: score + (total ? 0.5 * matched / total : 0) };
+    })
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map(({ row: { name, position, content } }) => ({ name, position, content }));
@@ -35,5 +53,5 @@ export async function retrieve(question: string) {
   `).all() as StoredChunk[];
   if (!rows.length) return null;
   const [vector] = await embedTexts([question]);
-  return rankChunks(vector, rows);
+  return rankChunks(vector, rows, 0.35, 4, question);
 }
