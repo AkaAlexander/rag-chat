@@ -1,40 +1,61 @@
 # RAG Chat
 
-Chat sobre documentos propios. Indexa un archivo en `/documents`, vuelve al chat y pregunta por un dato del texto. Despliega la referencia numerada de la respuesta para leer el fragmento original.
+Aplicación de portfolio para preguntar en lenguaje natural sobre documentos propios. El servidor busca pasajes relevantes, pide al modelo una respuesta basada en ellos y muestra las fuentes para que puedas comprobarla. Incluye ejemplos en español, inglés y neerlandés.
 
-## Arranque local
+## Instalación en Windows
 
-Desde la carpeta del proyecto, con Node.js 24 y npm, ejecuta en PowerShell:
+Necesitas Node.js 24, npm y, para la configuración local, Ollama en ejecución. Desde PowerShell, comprueba las herramientas y descarga el modelo de conversación:
 
 ```powershell
-npm ci
+node --version
+npm.cmd --version
+ollama --version
+ollama pull qwen3:4b
+```
+
+Abre PowerShell en la carpeta `rag-chat`, donde está `package.json`. Instala las dependencias y crea la configuración para tu equipo:
+
+```powershell
+npm.cmd ci
 if (-not (Test-Path .env.local)) { Copy-Item .env.example .env.local }
-npm run dev
+npm.cmd run dev
 ```
 
-Abre http://localhost:3000. Para conversar con el proveedor inicial, instala y arranca Ollama y descarga el modelo con `ollama pull qwen3:4b`. Si ya tienes otro modelo de chat, indica su nombre en `OLLAMA_MODEL`. Para usar un proveedor remoto, cambia `LLM_PROVIDER` a `anthropic` u `openai` y configura su clave y un modelo disponible en tu cuenta en `.env.local`. Reinicia el servidor después de cambiar estas variables.
+Abre la dirección `Local` que imprima Next.js, normalmente http://localhost:3000. Ollama atiende por defecto en el puerto 11434. La primera ingesta descarga además el modelo multilingüe de embeddings y lo guarda en `data/model-cache/`. Las siguientes ingestas reutilizan esa caché.
 
-El navegador conserva la conversación mientras la página está abierta y envía hasta diez turnos anteriores. Cada pregunta admite 4000 caracteres. La ruta usa un límite en memoria de diez solicitudes por minuto. En desarrollo local se comparte un único cupo. Detrás de un proxy que sobrescribe `X-Real-IP` y es la única entrada al servidor, configura `TRUST_PROXY=true` para aplicar el límite por IP.
+## Prueba de principio a fin
 
-## Documentos
+1. Desde el chat abre **Gestionar documentos**. Selecciona [observatorio-nimbo.md](data/sample-docs/observatorio-nimbo.md) y pulsa **Indexar documento**. La lista muestra el nombre y el número de fragmentos cuando termina.
+2. Vuelve al chat y pregunta **¿A qué hora abre el observatorio Nimbo?** El dato esperado es **07:43**. Debajo de la respuesta verás la confianza estimada y una referencia desplegable con el nombre del documento, el número de fragmento y el texto original.
+3. Pregunta **¿Cuánto cuesta la entrada nocturna del observatorio Nimbo?** El documento omite el precio. El resultado esperado es un rechazo sin citas. Si el modelo solicita otra búsqueda, el chat muestra su progreso.
+4. Puedes subir tus propios archivos Markdown o texto UTF-8 de hasta **256 KiB** desde la misma página. **Borrar** elimina el documento y sus fragmentos de SQLite. El historial del chat vive en la pestaña y se pierde al recargarla.
 
-En `/documents` puedes indexar archivos Markdown y texto UTF-8 de hasta 256 KiB. El servidor divide el texto en ventanas de 80 unidades con 16 de solapamiento (las palabras largas se subdividen) y calcula vectores multilingües de 384 dimensiones en CPU. La primera ingesta descarga el modelo y lo guarda en `data/model-cache/`. SQLite conserva el texto original, los fragmentos y sus vectores en `data/rag.sqlite`. Borrar un documento elimina también sus fragmentos. Para cada pregunta se calcula la similitud coseno con los vectores guardados. Los cuatro mejores fragmentos que alcanzan 0,35 pueden llegar al modelo. Este umbral inicial se evaluará en la fase 6. El servidor comprueba las referencias antes de mostrar la respuesta y obtiene las citas del texto guardado. Si falta evidencia o las referencias son inválidas, el chat indica que no encuentra la respuesta.
+## Elegir el modelo
 
-## Comprobaciones
+Edita `.env.local` en la raíz del proyecto y reinicia el servidor. En Windows comprueba que el nombre termina en `.local`. La [configuración de ejemplo](.env.example) contiene los valores iniciales.
 
-El proveedor produce un objeto con respuesta, identificadores de citas y confianza estimada (baja, media o alta). Zod valida su estructura y el servidor resuelve los identificadores contra los fragmentos recuperados. Si la primera búsqueda resulta insuficiente, el modelo puede llamar una vez a `search_documents` con una consulta reformulada. Si aparecen fragmentos nuevos, el servidor los incorpora al contexto y solicita una última respuesta. La interfaz muestra la búsqueda en curso y publica el resultado después de validarlo.
+| Valor de `LLM_PROVIDER` | Variables del proveedor |
+|---|---|
+| `ollama` | `OLLAMA_MODEL` y `OLLAMA_BASE_URL` |
+| `openai` | `OPENAI_MODEL` y `OPENAI_API_KEY` |
+| `anthropic` | `ANTHROPIC_MODEL` y `ANTHROPIC_API_KEY` |
+
+Elige un modelo con salida estructurada y llamadas a herramientas disponible en tu cuenta o instalación. Con un proveedor remoto, el servidor le envía la pregunta, el historial incluido y los fragmentos recuperados. Los embeddings se calculan en el equipo con cualquiera de los tres proveedores. Guarda las claves en el archivo local, excluido de Git.
+
+## Pruebas y evaluación
+
+Ejecuta desde la raíz:
 
 ```powershell
-npm run lint
-npm run typecheck
-npm test
-npm run build
+npm.cmd run lint
+npm.cmd run typecheck
+npm.cmd test
+npm.cmd run build
+npm.cmd run eval
 ```
 
-La interfaz está en `src/app/`, la validación de entorno en `src/lib/config.ts` y sus pruebas en `tests/`.
+Los tests unitarios usan proveedores simulados. La evaluación usa el proveedor configurado y una base SQLite en memoria con los tres documentos de ejemplo. Imprime las respuestas, las fuentes citadas y las métricas. El conjunto contiene 12 preguntas con respuesta y tres que requieren abstención. La puntuación busca variantes aceptadas del dato y comprueba el documento y el pasaje de referencia. Puede penalizar una paráfrasis válida o aceptar una frase contradictoria que incluya la variante esperada. [Preguntas y respuestas esperadas](evals/dataset.json) · [Resultados con Ollama](evals/RESULTS.md)
 
-## Evaluación del RAG
+## Para la entrevista
 
-Ejecuta `npm run eval` desde la raíz con el proveedor de `.env.local` disponible. El script compila con TypeScript, indexa los tres documentos de ejemplo en SQLite en memoria y recorre el mismo flujo de respuestas y herramientas que utiliza el chat. Imprime cada pregunta, la respuesta, los nombres citados y una tabla de métricas.
-
-El conjunto `evals/dataset.json` incluye 12 preguntas con un dato verificable y 3 sobre información ausente. La exactitud global cuenta los rechazos correctos entre los 15 casos. El texto se puntúa buscando una variante aceptada como palabras completas tras normalizar tildes, puntuación y mayúsculas. Esta regla puede aceptar una frase contradictoria que contenga el dato o penalizar una paráfrasis válida. La métrica de citas exige, en los 12 casos con respuesta, que cada fragmento citado pertenezca al documento previsto y contenga el pasaje de referencia. La tasa de rechazos se calcula sobre los 3 casos sin evidencia.
+Sigue una pregunta desde la ingesta hasta el fragmento citado en la [arquitectura](docs/ARCHITECTURE.md). Las [decisiones técnicas](docs/DECISIONS.md) explican los parámetros de búsqueda, las alternativas y qué habría que medir al aumentar el tamaño de la biblioteca.
