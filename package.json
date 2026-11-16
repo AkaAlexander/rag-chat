@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "eval": "tsc -p evals/tsconfig.json && node --env-file-if-exists=.env.local node_modules/.cache/rag-evals/evals/run-evals.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",

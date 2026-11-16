@@ -3,13 +3,13 @@ import type { ChatMessage } from "../schemas";
 import { contextMessage, refusal, searchPrompt, systemPrompt } from "./prompts";
 import { retrieve } from "./retrieve";
 
-export async function* answerQuestion(messages: ChatMessage[], signal: AbortSignal) {
+export async function* answerQuestion(messages: ChatMessage[], signal: AbortSignal, search = retrieve) {
   const question = messages[messages.length - 1].content;
   const previous = messages.at(-3)?.content;
   const query = previous && question.split(/\s+/).length <= 6
     ? question + "\n" + previous
     : question;
-  const sources = await retrieve(query);
+  const sources = await search(query);
   if (sources === null) {
     yield { error: "Todavía no hay documentos indexados. Abre «Gestionar documentos», elige un archivo y pulsa «Indexar documento»." };
     return;
@@ -34,7 +34,7 @@ export async function* answerQuestion(messages: ChatMessage[], signal: AbortSign
     const query = await provider.requestSearch(context, searchPrompt, signal);
     if (!query) break;
     yield { status: "Buscando más información en tus documentos…" };
-    const matches = await retrieve(query);
+    const matches = await search(query);
     const added = (matches ?? []).filter(match => !sources.some(source =>
       source.name === match.name && source.position === match.position && source.content === match.content));
     if (!added.length) break;

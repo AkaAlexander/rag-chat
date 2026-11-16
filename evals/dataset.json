@@ -1,0 +1,143 @@
+[
+  {
+    "question": "¿A qué hora abre el observatorio Nimbo?",
+    "expected": {
+      "answers": [
+        "07:43",
+        "7:43"
+      ],
+      "document": "observatorio-nimbo.md",
+      "evidence": "07:43 cada mañana"
+    }
+  },
+  {
+    "question": "Where do tours at Nimbo begin?",
+    "expected": {
+      "answers": [
+        "Bruma"
+      ],
+      "document": "observatorio-nimbo.md",
+      "evidence": "sala Bruma"
+    }
+  },
+  {
+    "question": "¿Cuántas personas como máximo admite cada grupo del observatorio?",
+    "expected": {
+      "answers": [
+        "12",
+        "doce"
+      ],
+      "document": "observatorio-nimbo.md",
+      "evidence": "12 visitantes"
+    }
+  },
+  {
+    "question": "Welk formulier is nodig voor een groepsbezoek aan Nimbo?",
+    "expected": {
+      "answers": [
+        "NIM-42"
+      ],
+      "document": "observatorio-nimbo.md",
+      "evidence": "formulario NIM-42"
+    }
+  },
+  {
+    "question": "How long can I borrow a book from Harbor Library?",
+    "expected": {
+      "answers": [
+        "21 days",
+        "twenty-one days"
+      ],
+      "document": "harbor-library.md",
+      "evidence": "21 days"
+    }
+  },
+  {
+    "question": "¿En qué calle está el buzón de devoluciones de la biblioteca?",
+    "expected": {
+      "answers": [
+        "Coral"
+      ],
+      "document": "harbor-library.md",
+      "evidence": "Coral Street"
+    }
+  },
+  {
+    "question": "At which desk do I collect reserved books?",
+    "expected": {
+      "answers": [
+        "Indigo"
+      ],
+      "document": "harbor-library.md",
+      "evidence": "Indigo desk"
+    }
+  },
+  {
+    "question": "Welke code gebruikt de digitale catalogus van Harbor Library?",
+    "expected": {
+      "answers": [
+        "HBR-17"
+      ],
+      "document": "harbor-library.md",
+      "evidence": "HBR-17"
+    }
+  },
+  {
+    "question": "Hoeveel kost een veiligheidscontrole bij De Spil?",
+    "expected": {
+      "answers": [
+        "18 euro",
+        "€18",
+        "18 €",
+        "achttien euro"
+      ],
+      "document": "fietswerkplaats.txt",
+      "evidence": "18 euro"
+    }
+  },
+  {
+    "question": "At which gate do customers pick up their bicycles?",
+    "expected": {
+      "answers": [
+        "Koper"
+      ],
+      "document": "fietswerkplaats.txt",
+      "evidence": "poort Koper"
+    }
+  },
+  {
+    "question": "¿Qué formulario se usa para pedir una reparación de bicicleta?",
+    "expected": {
+      "answers": [
+        "SPL-08"
+      ],
+      "document": "fietswerkplaats.txt",
+      "evidence": "SPL-08"
+    }
+  },
+  {
+    "question": "Op welke dag is de fietswerkplaats gesloten?",
+    "expected": {
+      "answers": [
+        "woensdag"
+      ],
+      "document": "fietswerkplaats.txt",
+      "evidence": "woensdag gesloten"
+    }
+  },
+  {
+    "question": "¿Cuánto cuesta la entrada nocturna del observatorio Nimbo?",
+    "expectedRefusal": "No encuentro la respuesta en los documentos disponibles.",
+    "expected": null
+  },
+  {
+    "question": "What fine does Harbor Library charge for a lost book?",
+    "expectedRefusal": "I couldn’t find the answer in the available documents.",
+    "expected": null
+  },
+  {
+    "question": "Welk telefoonnummer heeft fietswerkplaats De Spil?",
+    "expectedRefusal": "Ik kan het antwoord niet vinden in de beschikbare documenten.",
+    "expected": null
+  }
+]

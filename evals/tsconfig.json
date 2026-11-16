@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "rootDir": "..",
+    "outDir": "../node_modules/.cache/rag-evals",
+    "noEmit": false,
+    "incremental": false
+  },
+  "include": ["run-evals.ts"]
+}

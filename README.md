@@ -32,3 +32,9 @@ npm run build
 ```
 
 La interfaz está en `src/app/`, la validación de entorno en `src/lib/config.ts` y sus pruebas en `tests/`.
+
+## Evaluación del RAG
+
+Ejecuta `npm run eval` desde la raíz con el proveedor de `.env.local` disponible. El script compila con TypeScript, indexa los tres documentos de ejemplo en SQLite en memoria y recorre el mismo flujo de respuestas y herramientas que utiliza el chat. Imprime cada pregunta, la respuesta, los nombres citados y una tabla de métricas.
+
+El conjunto `evals/dataset.json` incluye 12 preguntas con un dato verificable y 3 sobre información ausente. La exactitud global cuenta los rechazos correctos entre los 15 casos. El texto se puntúa buscando una variante aceptada como palabras completas tras normalizar tildes, puntuación y mayúsculas. Esta regla puede aceptar una frase contradictoria que contenga el dato o penalizar una paráfrasis válida. La métrica de citas exige, en los 12 casos con respuesta, que cada fragmento citado pertenezca al documento previsto y contenga el pasaje de referencia. La tasa de rechazos se calcula sobre los 3 casos sin evidencia.

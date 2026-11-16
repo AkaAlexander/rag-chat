@@ -46,8 +46,8 @@ export function rankChunks(query: number[], rows: StoredChunk[], threshold = 0.3
     .map(({ row: { name, position, content } }) => ({ name, position, content }));
 }
 
-export async function retrieve(question: string) {
-  const rows = getDatabase().prepare(`
+export async function retrieve(question: string, db = getDatabase()) {
+  const rows = db.prepare(`
     SELECT d.name, c.position, c.content, c.embedding FROM chunks c
     JOIN documents d ON d.id = c.document_id ORDER BY d.id, c.position
   `).all() as StoredChunk[];

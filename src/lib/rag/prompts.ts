@@ -24,7 +24,7 @@ export function contextMessage(messages: ChatMessage[], sources: Source[]): Chat
 }
 
 export function refusal(question: string) {
-  if (/\b(wat|welke|hoe|hoeveel|wie|waar|wanneer|waarom|het|een|zijn|volgens|geef|vertel)\b/iu.test(question))
+  if (/\b(wat|welke?|hoe|hoeveel|wie|waar|wanneer|waarom|het|een|zijn|volgens|geef|vertel)\b/iu.test(question))
     return "Ik kan het antwoord niet vinden in de beschikbare documenten.";
   if (/\b(what|which|how|who|where|when|why|does|is|are|can|the|tell|give|list|summari[sz]e)\b/iu.test(question))
     return "I couldn’t find the answer in the available documents.";
