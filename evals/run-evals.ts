@@ -47,11 +47,11 @@ async function run() {
       console.log(`${index + 1}. ${item.question} | ${error ? "ERROR" : answer} | ${sources.map(s => s.name).join(", ")} | ${JSON.stringify(marks)}`);
     }
     const metrics = [
-      ["Respuestas correctas", results.map(r => r.correct)],
-      ["Citas correctas", results.map(r => r.citation)],
-      ["Rechazos correctos", results.map(r => r.rejected)],
+      ["Correct answers", results.map(r => r.correct)],
+      ["Correct citations", results.map(r => r.citation)],
+      ["Correct abstentions", results.map(r => r.rejected)],
     ] as const;
-    console.log("\n| Métrica | Aciertos | Porcentaje |\n|---|---:|---:|");
+    console.log("\n| Metric | Passed | Percentage |\n|---|---:|---:|");
     for (const [name, values] of metrics) {
       const applicable = values.filter(v => v !== null);
       const passed = applicable.filter(Boolean).length;

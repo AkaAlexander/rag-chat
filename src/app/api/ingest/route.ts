@@ -6,7 +6,7 @@ import { readUpload, UploadError } from "../../../lib/rag/upload";
 import { saveDocument } from "../../../lib/rag/vector-store";
 
 export async function POST(request: Request) {
-  const duplicate = () => Response.json({ error: "Este contenido ya está indexado." }, { status: 409 });
+  const duplicate = () => Response.json({ error: "This content is already indexed." }, { status: 409 });
   try {
     const { name, content } = await readUpload(request);
     const digest = createHash("sha256").update(content).digest("hex");
@@ -18,6 +18,6 @@ export async function POST(request: Request) {
     return Response.json({ name, chunks: chunks.length }, { status: 201 });
   } catch (error) {
     if (error instanceof UploadError) return Response.json({ error: error.message }, { status: error.status });
-    return Response.json({ error: "No se pudo indexar el archivo. Comprueba la descarga del modelo y el acceso al disco." }, { status: 503 });
+    return Response.json({ error: "Could not index the file. Check the model download and disk access." }, { status: 503 });
   }
 }

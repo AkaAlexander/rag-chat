@@ -5,5 +5,5 @@ import "./globals.css";
 export const metadata: Metadata = { title: "RAG Chat" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return <html lang="es"><body className="bg-stone-50 text-stone-900 antialiased">{children}</body></html>;
+  return <html lang="en"><body className="bg-stone-50 text-stone-900 antialiased">{children}</body></html>;
 }

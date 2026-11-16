@@ -60,7 +60,7 @@ it("declines when retrieval finds no evidence and no search is requested", async
 it("explains how to index the first document when the library is empty", async () => {
   vi.mocked(retrieve).mockResolvedValueOnce(null);
   const response = await POST(request());
-  expect(await response.text()).toContain("Todavía no hay documentos indexados");
+  expect(await response.text()).toContain("No documents have been indexed yet");
 });
 
 it("signals interrupted responses without exposing upstream details", async () => {
@@ -76,5 +76,5 @@ it("reports exhausted API credit separately from temporary throttling", async ()
     error: { code: "credit_balance_exhausted", type: "insufficient_quota", message: "private detail" },
   }, { status: 429 })));
   const event = JSON.parse(await (await POST(request())).text());
-  expect(event.error).toBe("Se ha agotado el saldo de la API. Revisa la facturación de tu cuenta.");
+  expect(event.error).toBe("API credits are exhausted. Check your account billing.");
 });

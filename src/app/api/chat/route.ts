@@ -8,11 +8,11 @@ export async function POST(request: Request) {
     ? request.headers.get("x-real-ip") ?? "local"
     : "local";
   if (!allowRequest(ip)) {
-    return Response.json({ error: "Demasiadas preguntas. Inténtalo en un minuto." }, { status: 429 });
+    return Response.json({ error: "Too many requests. Try again in a minute." }, { status: 429 });
   }
   const input = chatSchema.safeParse(await request.json().catch(() => null));
   if (!input.success) {
-    return Response.json({ error: "Revisa la longitud de la pregunta y el historial." }, { status: 400 });
+    return Response.json({ error: "Check the question length and conversation history." }, { status: 400 });
   }
 
   const abort = new AbortController();
@@ -47,10 +47,10 @@ export async function POST(request: Request) {
 
 function rateLimitMessage(cause: Error) {
   if ("code" in cause && cause.code === "credit_balance_exhausted") {
-    return "Se ha agotado el saldo de la API. Revisa la facturación de tu cuenta.";
+    return "API credits are exhausted. Check your account billing.";
   }
   if ("type" in cause && cause.type === "insufficient_quota") {
-    return "La cuota de la API es insuficiente. Revisa el saldo y los límites de uso.";
+    return "Insufficient API quota. Check your balance and usage limits.";
   }
-  return "El proveedor ha limitado las peticiones. Espera un momento y vuelve a intentarlo.";
+  return "The provider has limited requests. Wait a moment and try again.";
 }

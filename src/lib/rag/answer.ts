@@ -11,7 +11,7 @@ export async function* answerQuestion(messages: ChatMessage[], signal: AbortSign
     : question;
   const sources = await search(query);
   if (sources === null) {
-    yield { error: "Todavía no hay documentos indexados. Abre «Gestionar documentos», elige un archivo y pulsa «Indexar documento»." };
+    yield { error: "No documents have been indexed yet. Open Manage documents, choose a file and select Index document." };
     return;
   }
   const provider = getProvider();
@@ -33,7 +33,7 @@ export async function* answerQuestion(messages: ChatMessage[], signal: AbortSign
     if (attempt === maxAdditionalSearches) break;
     const query = await provider.requestSearch(context, searchPrompt, signal);
     if (!query) break;
-    yield { status: "Buscando más información en tus documentos…" };
+    yield { status: "Searching your documents for more information…" };
     const matches = await search(query);
     const added = (matches ?? []).filter(match => !sources.some(source =>
       source.name === match.name && source.position === match.position && source.content === match.content));

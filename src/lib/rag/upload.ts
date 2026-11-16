@@ -10,20 +10,20 @@ export async function readUpload(request: Request) {
   try {
     filename = decodeURIComponent(request.headers.get("x-filename") ?? "");
   } catch {
-    throw new UploadError("Nombre de archivo inválido.");
+    throw new UploadError("Invalid file name.");
   }
   const base = path.win32.basename(filename.normalize("NFC"));
   const match = /^(.+)\.(md|txt)$/iu.exec(base);
-  if (!match) throw new UploadError("Elige un archivo .md o .txt.", 415);
+  if (!match) throw new UploadError("Choose an .md or .txt file.", 415);
   const stem = match[1].replace(/[^\p{L}\p{N} _.-]/gu, "_").slice(0, 100);
   const name = stem + "." + match[2].toLowerCase();
   const mime = request.headers.get("content-type")?.split(";")[0].toLowerCase();
   if (mime && !["text/plain", "text/markdown", "text/x-markdown", "application/octet-stream"].includes(mime)) {
-    throw new UploadError("Tipo de archivo incompatible.", 415);
+    throw new UploadError("Unsupported file type.", 415);
   }
-  const tooLarge = () => new UploadError("El máximo por archivo es 256 KiB.", 413);
+  const tooLarge = () => new UploadError("The maximum file size is 256 KiB.", 413);
   if (Number(request.headers.get("content-length")) > maxBytes) throw tooLarge();
-  if (!request.body) throw new UploadError("El archivo está vacío.");
+  if (!request.body) throw new UploadError("The file is empty.");
   const reader = request.body.getReader();
   const parts: Uint8Array[] = [];
   let bytes = 0;
@@ -41,10 +41,10 @@ export async function readUpload(request: Request) {
   try {
     content = new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(parts));
   } catch {
-    throw new UploadError("Guarda el documento como texto UTF-8.");
+    throw new UploadError("Save the document as UTF-8 text.");
   }
   if (!content.trim() || Array.from(content).some(char => char < " " && !"\r\n\t".includes(char))) {
-    throw new UploadError("El archivo debe contener texto legible.");
+    throw new UploadError("The file must contain readable text.");
   }
   return { name, content };
 }
